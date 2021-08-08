@@ -1,7 +1,7 @@
-import { h, FunctionComponent, Fragment } from 'preact';
+import { h, Fragment } from 'preact';
+import clsx from 'clsx';
 import { useState, useCallback, useRef } from 'preact/hooks';
 import { useSelector, useDispatch } from 'react-redux';
-import b from 'bem-react-helper';
 import { useIntl, defineMessages, IntlShape, FormattedMessage } from 'react-intl';
 
 import { User } from 'common/types';
@@ -10,16 +10,17 @@ import { StoreState } from 'store';
 import { setUserSubscribed } from 'store/user/actions';
 import { sleep } from 'utils/sleep';
 import { extractErrorMessageFromResponse } from 'utils/errorUtils';
-import { useTheme } from 'hooks/useTheme';
 import { getHandleClickProps } from 'common/accessibility';
 import { emailVerificationForSubscribe, emailConfirmationForSubscribe, unsubscribeFromEmailUpdates } from 'common/api';
 import { Input } from 'components/input';
 import { Button } from 'components/button';
-import { Dropdown } from 'components/dropdown';
 import { Preloader } from 'components/preloader';
 import { TextareaAutosize } from 'components/textarea-autosize';
 import { isUserAnonymous } from 'utils/isUserAnonymous';
 import { isJwtExpired } from 'utils/jwt';
+import { Dropdown } from 'components/ui/dropdown';
+import { IconButton } from 'components/icon-button/icon-button';
+import { BellIcon } from 'components/icons/bell';
 
 const emailRegexp = /[^@]+@[^.]+\..+/;
 
@@ -32,90 +33,54 @@ enum Step {
   Unsubscribed,
 }
 
-const messages = defineMessages({
-  token: {
-    id: 'token',
-    defaultMessage: 'Token',
-  },
-  expiredToken: {
-    id: 'token.expired',
-    defaultMessage: 'Token is expired',
-  },
-  haveSubscribed: {
-    id: 'subscribeByEmail.have-been-subscribed',
-    defaultMessage: 'You have been subscribed on updates by email',
-  },
-  subscribed: {
-    id: 'subscribeByEmail.subscribed',
-    defaultMessage: 'You are subscribed on updates by email',
-  },
-  submit: {
-    id: 'subscribeByEmail.submit',
-    defaultMessage: 'Submit',
-  },
-  subscribe: {
-    id: 'subscribeByEmail.subscribe',
-    defaultMessage: 'Subscribe',
-  },
-  subscribeByEmail: {
-    id: 'subscribeByEmail.subscribe-by-email',
-    defaultMessage: 'Subscribe by Email',
-  },
-  onlyRegisteredUsers: {
-    id: 'subscribeByEmail.only-registered-users',
-    defaultMessage: 'Available only for registered users',
-  },
-  email: {
-    id: 'subscribeByEmail.email',
-    defaultMessage: 'Email',
-  },
-});
-
-const renderEmailPart = (
+function renderEmailPart(
   loading: boolean,
   intl: IntlShape,
   emailAddress: string,
   handleChangeEmail: (e: Event) => void
-) => (
-  <>
-    <div className="comment-form__subscribe-by-email__title">
-      <FormattedMessage id="subscribeByEmail.subscribe-to-replies" defaultMessage="Subscribe to replies" />
-    </div>
-    <Input
-      autofocus
-      className="comment-form__subscribe-by-email__input"
-      placeholder={intl.formatMessage(messages.email)}
-      value={emailAddress}
-      onInput={handleChangeEmail}
-      disabled={loading}
-    />
-  </>
-);
+) {
+  return (
+    <>
+      <div className="comment-form__subscribe-by-email__title">
+        <FormattedMessage id="subscribeByEmail.subscribe-to-replies" defaultMessage="Subscribe to replies" />
+      </div>
+      <Input
+        autofocus
+        className="comment-form__subscribe-by-email__input"
+        placeholder={intl.formatMessage(messages.email)}
+        value={emailAddress}
+        onInput={handleChangeEmail}
+        disabled={loading}
+      />
+    </>
+  );
+}
 
-const renderTokenPart = (
+function renderTokenPart(
   loading: boolean,
   intl: IntlShape,
   token: string,
   handleChangeToken: (e: Event) => void,
   setEmailStep: () => void
-) => (
-  <>
-    <Button kind="link" mix="auth-email-login-form__back-button" {...getHandleClickProps(setEmailStep)}>
-      <FormattedMessage id="subscribeByEmail.back" defaultMessage="Back" />
-    </Button>
-    <TextareaAutosize
-      className="comment-form__subscribe-by-email__token-input"
-      placeholder={intl.formatMessage(messages.token)}
-      autofocus
-      onInput={handleChangeToken}
-      disabled={loading}
-      value={token}
-    />
-  </>
-);
+) {
+  return (
+    <>
+      <Button kind="link" mix="auth-email-login-form__back-button" {...getHandleClickProps(setEmailStep)}>
+        <FormattedMessage id="subscribeByEmail.back" defaultMessage="Back" />
+      </Button>
+      <TextareaAutosize
+        className="comment-form__subscribe-by-email__token-input"
+        placeholder={intl.formatMessage(messages.token)}
+        autofocus
+        onInput={handleChangeToken}
+        disabled={loading}
+        value={token}
+      />
+    </>
+  );
+}
 
-export const SubscribeByEmailForm: FunctionComponent = () => {
-  const theme = useTheme();
+export function SubscribeByEmailForm() {
   const dispatch = useDispatch();
   const intl = useIntl();
   const subscribed = useSelector<StoreState, boolean>(({ user }) =>
@@ -234,15 +199,9 @@ export const SubscribeByEmailForm: FunctionComponent = () => {
         : intl.formatMessage(messages.subscribed);
 
     return (
-      <div className={b('comment-form__subscribe-by-email', { mods: { subscribed: true } })}>
+      <div className={clsx('comment-form__subscribe-by-email', { subscribed: true })}>
         {text}
-        <Button
-          kind="primary"
-          size="middle"
-          mix="comment-form__subscribe-by-email__button"
-          theme={theme}
-          onClick={handleUnsubscribe}
-        >
+        <Button kind="primary" size="middle" mix="comment-form__subscribe-by-email__button" onClick={handleUnsubscribe}>
           <FormattedMessage id="subscribeByEmail.unsubscribe" defaultMessage="Unsubscribe" />
         </Button>
       </div>
@@ -257,7 +216,7 @@ export const SubscribeByEmailForm: FunctionComponent = () => {
      */
 
     return (
-      <div className={b('comment-form__subscribe-by-email', { mods: { unsubscribed: true } })}>
+      <div className={'comment-form__subscribe-by-email'}>
         <FormattedMessage
           id="subscribeByEmail.have-been-unsubscribed"
           defaultMessage="You have been unsubscribed by email to updates"
@@ -266,7 +225,6 @@ export const SubscribeByEmailForm: FunctionComponent = () => {
           kind="primary"
           size="middle"
           mix="comment-form__subscribe-by-email__button"
-          theme={theme}
           onClick={() => setStep(Step.Close)}
         >
           <FormattedMessage id="subscribeByEmail.close" defaultMessage="Close" />
@@ -279,7 +237,7 @@ export const SubscribeByEmailForm: FunctionComponent = () => {
     step === Step.Email ? intl.formatMessage(messages.submit) : intl.formatMessage(messages.subscribe);
 
   return (
-    <form className={b('comment-form__subscribe-by-email', {}, { theme })} onSubmit={handleSubmit}>
+    <form className={'comment-form__subscribe-by-email'} onSubmit={handleSubmit}>
       {step === Step.Email && renderEmailPart(loading, intl, emailAddress, handleChangeEmail)}
       {step === Step.Token && renderTokenPart(loading, intl, token, handleChangeToken, setEmailStep)}
       {error !== null && (
@@ -298,10 +256,9 @@ export const SubscribeByEmailForm: FunctionComponent = () => {
       </Button>
     </form>
   );
-};
+}
 
-export const SubscribeByEmail: FunctionComponent = () => {
-  const theme = useTheme();
+export function SubscribeByEmail() {
   const intl = useIntl();
   const user = useSelector<StoreState, User | null>(({ user }) => user);
   const isAnonymous = isUserAnonymous(user);
@@ -309,13 +266,52 @@ export const SubscribeByEmail: FunctionComponent = () => {
 
   return (
     <Dropdown
-      mix="comment-form__email-dropdown"
-      title={intl.formatMessage(messages.email)}
-      theme={theme}
-      disabled={isAnonymous}
-      buttonTitle={buttonTitle}
+      button={
+        <IconButton title={buttonTitle}>
+          <BellIcon />
+        </IconButton>
+      }
     >
       <SubscribeByEmailForm />
     </Dropdown>
   );
-};
+}
+
+const messages = defineMessages({
+  token: {
+    id: 'token',
+    defaultMessage: 'Token',
+  },
+  expiredToken: {
+    id: 'token.expired',
+    defaultMessage: 'Token is expired',
+  },
+  haveSubscribed: {
+    id: 'subscribeByEmail.have-been-subscribed',
+    defaultMessage: 'You have been subscribed on updates by email',
+  },
+  subscribed: {
+    id: 'subscribeByEmail.subscribed',
+    defaultMessage: 'You are subscribed on updates by email',
+  },
+  submit: {
+    id: 'subscribeByEmail.submit',
+    defaultMessage: 'Submit',
+  },
+  subscribe: {
+    id: 'subscribeByEmail.subscribe',
+    defaultMessage: 'Subscribe',
+  },
+  subscribeByEmail: {
+    id: 'subscribeByEmail.subscribe-by-email',
+    defaultMessage: 'Subscribe by Email',
+  },
+  onlyRegisteredUsers: {
+    id: 'subscribeByEmail.only-registered-users',
+    defaultMessage: 'Available only for registered users',
+  },
+  email: {
+    id: 'subscribeByEmail.email',
+    defaultMessage: 'Email',
+  },
+});
